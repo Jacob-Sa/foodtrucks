@@ -1,0 +1,39 @@
+version: "3.9"
+networks:
+  app-network:
+    name: app-network
+
+services:
+  es:
+    container_name: es
+    image: elasticsearch:7.17.9
+    environment:
+      - discovery.type=single-node
+    networks:
+      - app-network
+
+  flask-app:
+    container_name: app
+    build:
+      dockerfile: app.Dockerfile
+    networks:
+      - app-network
+    depends_on:
+      - es
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./foodtrucks/project/flask-app/static/build:/www/data/static/build
+      - ./foodtrucks/project/flask-app/static/icons:/www/data/static/icons
+      - ./foodtrucks/project/flask-app/static/styles:/www/data/static/styles
+      - ./foodtrucks/project/flask-app/templates:/www/data/templates
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+    depends_on:
+      - es
+      - flask-app
